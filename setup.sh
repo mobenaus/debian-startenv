@@ -85,7 +85,7 @@ install_basic_tools() {
     local apt_packages=(
         git build-essential bash curl wget tmux mc
         python3 python3-pip net-tools openssl ca-certificates
-        gnupg lsb-release software-properties-common
+        gnupg lsb-release
         btop fzf zsh unzip zip xz-utils fontconfig
         jq neovim
     )
@@ -154,6 +154,11 @@ https://download.docker.com/linux/debian ${debian_codename} stable" \
     else
         info "NVM already installed."
     fi
+
+    # Source NVM into the current shell session so subsequent steps can use it
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck source=/dev/null
+    [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
 
     # ---- kubectl ----
     if ! has kubectl; then
@@ -335,16 +340,20 @@ install_ai_tools() {
         return
     fi
 
+    # Ensure NVM is loaded in the current shell (needed when NVM was installed
+    # in the same session and the shell profile has not been reloaded yet)
+    export NVM_DIR="$HOME/.nvm"
+    # shellcheck source=/dev/null
+    [[ -s "$NVM_DIR/nvm.sh" ]] && source "$NVM_DIR/nvm.sh"
+
     # Ensure npm/node is available (via nvm or system)
     if ! has node; then
-        warn "Node.js not found. Loading NVM if available..."
-        if [[ -s "$HOME/.nvm/nvm.sh" ]]; then
-            # shellcheck source=/dev/null
-            source "$HOME/.nvm/nvm.sh"
+        if has nvm; then
+            info "Node.js not found. Installing LTS via NVM..."
             nvm install --lts
             nvm use --lts
         else
-            error "NVM not found. Install basic tools first (option 2)."
+            error "Node.js and NVM not found. Install basic tools first (option 2)."
             return 1
         fi
     fi
